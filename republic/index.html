@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Republic for Which It Stands Companion</title>
+<link rel="icon" type="image/svg+xml" href="../assets/icon.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="../assets/icon-192.png">
+<link rel="apple-touch-icon" href="../assets/icon-192.png">
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#f4f1ea">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<link rel="stylesheet" href="../assets/companion.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap">
+    <a class="back" href="../">← Library</a>
+    <div class="kicker" id="kicker"></div>
+    <div class="titlerow"><h1 id="chTitle"></h1><select class="chsel" id="chSel" aria-label="Chapter" hidden></select></div>
+    <div class="barrow">
+      <div class="tabs" id="tabs" role="tablist" aria-label="Companion sections"></div>
+      <div class="tools">
+        <div class="search"><input id="q" type="search" placeholder="Search" aria-label="Search the companion" autocomplete="off"><kbd>/</kbd></div>
+        <button class="btn" id="askBtn" hidden>Ask Claude <span class="k">A</span></button>
+      </div>
+    </div>
+    <div class="hints" id="hints"></div>
+    <div class="drop" id="results" hidden></div>
+    <div class="drop ask" id="askPanel" hidden>
+      <div class="chead"><span class="role">Ask Claude about this chapter</span></div>
+      <div class="asklog" id="askLog"></div>
+      <textarea id="askQ" placeholder="Why did Georgia expel its Black legislators?"></textarea>
+      <div class="btns">
+        <button class="btn primary" id="askGo">Ask <span class="k">Enter</span></button>
+        <button class="btn" id="askStop" hidden>Stop</button>
+        <button class="btn" id="askClear">Clear</button>
+        <span class="muted small">Esc closes. Uses your Claude account.</span>
+      </div>
+      <div class="askerr" id="askErr"></div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap" id="main"></main>
+<div class="pop" id="pop" hidden></div>
+<script src="book.js"></script>
+<script src="../assets/engine.js"></script>
+</body>
+</html>
