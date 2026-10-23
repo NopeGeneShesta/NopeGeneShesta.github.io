@@ -22,7 +22,7 @@
     terms: [["/", "search"], ["P T L F M C R", "tabs"]],
     timeline: [["E", "open or close all events"], ["/", "search"]],
     factions: [["1 2 3", "phase"], ["↑ ↓", "next group"], ["/", "search"]],
-    map: [["1 2", "view"], ["/", "search"]],
+    map: [["1 2 3", "view"], ["/", "search"]],
     cast: [["/", "search"], ["P T L F M C R", "tabs"]],
     recall: [["Space", "show answer"], ["↑ ↓", "move"], ["/", "search"]]
   };
@@ -41,6 +41,7 @@
     var keys = tabsOn.map(function (t) { return t.key.toUpperCase(); }).join(" ");
     $("hints").innerHTML = (HINTS[current] || []).map(function (h) {
       var k = h[0] === "P T L F M C R" ? keys : h[0];
+      if (h[0] === "1 2 3" && current === "map" && C.map) k = C.map.views.map(function (v, i) { return String(i + 1); }).join(" ");
       return "<span>" + k.split(" ").map(function (x) { return "<kbd>" + esc(x) + "</kbd>"; }).join(" ") + " " + esc(h[1]) + "</span>";
     }).join("") + (askReady ? "<span><kbd>A</kbd> ask Claude</span>" : "");
   }
@@ -377,43 +378,40 @@
   }
 
   /* ---------- Map ---------- */
+  // Data: map = { title, hint, views: [{label, legend: [[cls, text]]}], grid: [[abbr, col, row]],
+  //   states: { abbr: { name, border?, borderLabel?, v: [[cls, short], ...], info: [lines] } }, borderLegend?, notes[] }
   var MAPV = { view: 0, sel: null };
   function renderMap() {
     var s = $("sec-map"); if (!s) return;
-    var M = C.map;
+    var M = C.map; MAPV = { view: 0, sel: null };
+    var cols = 1 + Math.max.apply(null, M.grid.map(function (g) { return g[1]; }));
     s.innerHTML = '<div class="card"><div class="chead"><span class="role">' + esc(M.title) + '</span></div><div class="btns" id="mapViews">' +
-      '<button class="btn" data-v="0">Military districts, 1867 <span class="k">1</span></button><button class="btn" data-v="1">Readmission to Congress <span class="k">2</span></button></div>' +
-      '<div class="panels mapgrid"><div class="tilemap" id="tiles"></div><div style="display:grid;gap:10px"><div class="legend" id="mapLegend"></div><div class="pnl prop" id="mapInfo"></div></div></div>' +
-      '<ul class="plain read lk muted">' + M.notes.map(function (n) { return "<li>" + esc(n) + "</li>"; }).join("") + "</ul></div>";
+      M.views.map(function (v, i) { return '<button class="btn" data-v="' + i + '">' + esc(v.label) + ' <span class="k">' + (i + 1) + "</span></button>"; }).join("") + "</div>" +
+      '<div class="panels mapgrid"><div class="tilemap" id="tiles" style="grid-template-columns:repeat(' + cols + ',minmax(0,1fr));max-width:' + Math.min(620, cols * 104) + 'px"></div><div style="display:grid;gap:10px;align-content:start"><div class="legend" id="mapLegend"></div><div class="pnl prop" id="mapInfo"></div></div></div>' +
+      '<ul class="plain read lk muted">' + (M.notes || []).map(function (n) { return "<li>" + esc(n) + "</li>"; }).join("") + "</ul></div>";
     Array.prototype.forEach.call(s.querySelectorAll("#mapViews .btn"), function (b) { b.addEventListener("click", function () { setMapView(+b.dataset.v); }); });
     setMapView(0);
   }
   function setMapView(v) {
-    var M = C.map; MAPV.view = v;
+    var M = C.map; if (!M || v < 0 || v >= M.views.length) return;
+    MAPV.view = v;
     Array.prototype.forEach.call(document.querySelectorAll("#mapViews .btn"), function (b) { b.setAttribute("aria-pressed", +b.dataset.v === v ? "true" : "false"); });
     $("tiles").innerHTML = M.grid.map(function (g) {
       var st = M.states[g[0]], cls = "tile", val;
-      if (st.border) { cls += " border"; val = "Union"; }
-      else if (v === 0) { cls += " d" + st.district; val = st.district ? "District " + st.district : "No district"; }
-      else { cls += " p" + st.period; val = st.short || st.readmit.replace(/^[A-Za-z]+ /, ""); }
+      if (st.border) { cls += " border"; val = st.borderLabel || ""; }
+      else { var p = (st.v || [])[v] || ["", ""]; if (p[0]) cls += " " + p[0]; val = p[1]; }
       if (MAPV.sel === g[0]) cls += " sel";
       return '<button class="' + cls + '" data-st="' + g[0] + '" style="grid-column:' + (g[1] + 1) + ";grid-row:" + (g[2] + 1) + '" aria-label="' + esc(st.name) + '"' + (st.border ? " disabled" : "") + '><span class="ab">' + g[0] + '</span><span class="tv">' + esc(val) + "</span></button>";
     }).join("");
     Array.prototype.forEach.call(document.querySelectorAll("#tiles .tile"), function (t) { t.addEventListener("click", function () { MAPV.sel = t.dataset.st; setMapView(MAPV.view); }); });
-    var leg = "";
-    if (v === 0) {
-      leg = Object.keys(M.districts).map(function (d) { return '<div><i class="tile d' + d + '" style="aspect-ratio:auto;padding:0"></i><span>' + esc(M.districts[d]) + "</span></div>"; }).join("") +
-        '<div><i class="tile d0" style="aspect-ratio:auto;padding:0"></i><span>Tennessee: readmitted in 1866, no district.</span></div>';
-    } else {
-      leg = Object.keys(M.periods).map(function (p) { return '<div><i class="tile p' + p + '" style="aspect-ratio:auto;padding:0"></i><span>' + esc(M.periods[p]) + "</span></div>"; }).join("");
-    }
-    leg += '<div><i class="tile border" style="aspect-ratio:auto;padding:0"></i><span>Union slave states, not reconstructed</span></div>';
+    var leg = M.views[v].legend.map(function (l) { return '<div><i class="tile ' + l[0] + '" style="aspect-ratio:auto;padding:0"></i><span>' + esc(l[1]) + "</span></div>"; }).join("");
+    if (M.borderLegend) leg += '<div><i class="tile border" style="aspect-ratio:auto;padding:0"></i><span>' + esc(M.borderLegend) + "</span></div>";
     $("mapLegend").innerHTML = leg;
     var info = $("mapInfo");
     if (MAPV.sel && M.states[MAPV.sel]) {
       var st = M.states[MAPV.sel];
-      info.innerHTML = '<div class="plabel">' + esc(st.name) + '</div><p class="read">' + (st.district ? esc(M.districts[st.district]) : "Not in a military district.") + '</p><p class="read">Readmitted: ' + esc(st.readmit) + ".</p>";
-    } else info.innerHTML = '<div class="plabel">Tap a state</div><p class="read">See its district, commander, and readmission date.</p>';
+      info.innerHTML = '<div class="plabel">' + esc(st.name) + "</div>" + (st.info || []).map(function (l) { return '<p class="read">' + esc(l) + "</p>"; }).join("");
+    } else info.innerHTML = '<div class="plabel">Tap a ' + esc(M.unit || "state") + '</div><p class="read">' + esc(M.hint || "See the details for each one.") + "</p>";
   }
 
   /* ---------- Cast ---------- */
@@ -604,7 +602,7 @@
       else if (key === "ArrowLeft") { e.preventDefault(); setPhase(FX.phase - 1); }
       else if (down || up) { e.preventDefault(); var o = FX.F.order; pickNode(o[(o.indexOf(FX.sel) + (down ? 1 : -1) + o.length) % o.length]); }
     } else if (current === "map") {
-      if (key === "1" || key === "2") { e.preventDefault(); setMapView(+key - 1); }
+      if (/^[1-9]$/.test(key) && C.map && +key <= C.map.views.length) { e.preventDefault(); setMapView(+key - 1); }
     } else if (current === "recall") {
       if (down) { e.preventDefault(); setQ(curQ + 1, true); }
       else if (up) { e.preventDefault(); setQ(curQ - 1, true); }
