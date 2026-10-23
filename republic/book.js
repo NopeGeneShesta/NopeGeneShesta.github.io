@@ -250,6 +250,7 @@ window.BOOK = {
 
     map: {
       title: "The South under Reconstruction",
+      view: "556 226 584 376",
       hint: "See its district, commander, and readmission date.",
       views: [
         { label: "Military districts, 1867", legend: [
@@ -581,6 +582,7 @@ window.BOOK = {
 
     map: {
       title: "The West, 1864–1871",
+      view: "120 4 702 756",
       unit: "state or territory",
       hint: "See its status, its place on the railroad, and its wars and treaties.",
       views: [
@@ -612,23 +614,24 @@ window.BOOK = {
         WA: { name: "Washington Territory", v: [["d3","Terr. 1853"], ["",""], ["",""]], info: ["Territory since 1853. State in 1889."] },
         ID: { name: "Idaho Territory", v: [["d3","Terr. 1863"], ["",""], ["",""]], info: ["Territory since 1863, after a gold rush. State in 1890."] },
         MT: { name: "Montana Territory", v: [["d3","Terr. 1864"], ["",""], ["p3","Marias 1870"]], info: ["Territory since 1864. The Bozeman Trail ran to its gold fields.", "Marias Massacre, January 1870: at least 173 Piegan Blackfeet killed."] },
-        DK: { name: "Dakota Territory", v: [["d3","Terr. 1861"], ["",""], ["p1","Sioux res. 1868"]], info: ["Territory since 1861, covering today's North and South Dakota.", "The Fort Laramie Treaty made everything west of the Missouri River, Black Hills included, the Great Sioux Reservation."] },
+        DK: { name: "Dakota Territory", ids: ["nd", "sd"], v: [["d3","Terr. 1861"], ["",""], ["p1","Sioux res. 1868"]], info: ["Territory since 1861, covering today's North and South Dakota.", "The Fort Laramie Treaty made everything west of the Missouri River, Black Hills included, the Great Sioux Reservation."] },
         OR: { name: "Oregon", v: [["d1","State 1859"], ["",""], ["",""]], info: ["State since 1859."] },
         NV: { name: "Nevada", v: [["d1","State 1864"], ["d4","Central Pac."], ["",""]], info: ["State since 1864, rushed in during the war for its silver and its Republican votes.", "The Central Pacific crossed it in 1868."] },
         WY: { name: "Wyoming Territory", v: [["d3","Terr. 1868"], ["d1","Union Pac."], ["p4","Red Cloud's War"]], info: ["Organized in 1868 along the Union Pacific line. First to give women the vote, in 1869.", "Red Cloud's War was fought over the Bozeman Trail forts here, 1866–68, and the Fort Laramie Treaty was signed here."] },
         NE: { name: "Nebraska", v: [["d1","State 1867"], ["d1","Union Pac."], ["",""]], info: ["Admitted in 1867 on the condition that it never deny the vote because of race.", "The Union Pacific started at Omaha, just across the river from Iowa."] },
-        CA: { name: "California", v: [["d1","State 1850"], ["d4","Central Pac."], ["p3","L.A. 1871"]], info: ["State since 1850. Home to most of the country's Chinese immigrants.", "The Central Pacific started at Sacramento.", "Los Angeles Chinese massacre, October 1871."] },
+        CA: { name: "California", labelAt: [374, 352], v: [["d1","State 1850"], ["d4","Central Pac."], ["p3","L.A. 1871"]], info: ["State since 1850. Home to most of the country's Chinese immigrants.", "The Central Pacific started at Sacramento.", "Los Angeles Chinese massacre, October 1871."] },
         UT: { name: "Utah Territory", v: [["d3","Terr. 1850"], ["d3","Promontory"], ["",""]], info: ["Territory since 1850, settled by Mormons. Women got the vote in 1870. Statehood waited until 1896, after the church gave up polygamy.", "The two railroads met at Promontory Summit, May 10, 1869."] },
         CO: { name: "Colorado Territory", v: [["d3","Terr. 1861"], ["",""], ["p3","Sand Creek 1864"]], info: ["Territory since 1861, after the Pikes Peak gold rush. Johnson vetoed statehood in 1866. State in 1876.", "Sand Creek massacre, November 1864."] },
         KS: { name: "Kansas", v: [["d1","State 1861"], ["",""], ["p4","Medicine Lodge"]], info: ["State since 1861.", "Hancock's campaign, 1867. The Medicine Lodge treaties were signed here in October 1867."] },
         AK: { name: "Alaska", v: [["d2","Bought 1867"], ["",""], ["",""]], info: ["Bought from Russia in 1867 for $7.2 million, about 2 cents an acre. Run by the army at first. State in 1959."] },
         AZ: { name: "Arizona Territory", v: [["d3","Terr. 1863"], ["",""], ["p3","Camp Grant 1871"]], info: ["Territory since 1863.", "Camp Grant massacre, April 1871: about 144 Apache killed."] },
         NM: { name: "New Mexico Territory", v: [["d3","Terr. 1850"], ["",""], ["p4","Navajo 1864–68"]], info: ["Territory since 1850. Peonage and captive-taking were common here until the 1867 Peonage Act.", "The Navajo were held at Bosque Redondo from 1864 until the 1868 treaty let them go home."] },
-        IT: { name: "Indian Territory", v: [["d0","Indian Terr."], ["",""], ["p4","Washita 1868"]], info: ["Unorganized land, today's Oklahoma, set aside for nations removed from the East. The Medicine Lodge treaties put southern Plains nations here.", "Custer attacked Black Kettle's camp on the Washita River, November 1868."] },
+        IT: { name: "Indian Territory", ids: ["ok"], v: [["d0","Indian Terr."], ["",""], ["p4","Washita 1868"]], info: ["Unorganized land, today's Oklahoma, set aside for nations removed from the East. The Medicine Lodge treaties put southern Plains nations here.", "Custer attacked Black Kettle's camp on the Washita River, November 1868."] },
         TX: { name: "Texas", v: [["d1","State 1845"], ["",""], ["",""]], info: ["State since 1845. Readmitted to Congress in 1870. Comanche and Kiowa raids along its frontier were a cause of the Medicine Lodge talks."] }
       },
       notes: [
         "Most of the West was territories, governed directly from Washington. That is why Congress could require Black male voting there first, in January 1867.",
+        "Borders are drawn as they are today. Dakota Territory is shown as the two Dakotas, and Indian Territory as Oklahoma, whose panhandle was then unorganized land outside it.",
         "Nebraska and Colorado both sought statehood in 1866. Johnson vetoed both. Congress overrode him for Nebraska only, after adding a ban on racial voting rules."
       ]
     },

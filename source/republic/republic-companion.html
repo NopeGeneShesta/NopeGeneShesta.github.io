@@ -218,6 +218,24 @@ ul.rels b { font-weight: 600; font-size: 13px; }
 .tile.p1 { background: var(--p1); } .tile.p2 { background: var(--p2); } .tile.p3 { background: var(--p3); } .tile.p4 { background: repeating-linear-gradient(135deg, var(--p2) 0 6px, var(--p3) 6px 12px); }
 .mapgrid { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); align-items: start; }
 @media (max-width: 640px) { .mapgrid { grid-template-columns: 1fr; } }
+/* Map: real state shapes */
+.mapsvg-wrap { width: 100%; }
+#mapsvg { display: block; width: 100%; height: auto; max-height: 72vh; }
+#mapsvg .ctxp { fill: var(--orig-bg); stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; }
+#mapsvg .rg path { fill: var(--surface); stroke: var(--rule); stroke-width: 1.2; vector-effect: non-scaling-stroke; stroke-linejoin: round; cursor: pointer; }
+#mapsvg .rg:hover path, #mapsvg .rg:focus-visible path { stroke: var(--fg); stroke-width: 1.8; }
+#mapsvg .rg:focus { outline: none; }
+#mapsvg .rg.bd path { fill: var(--orig-bg); stroke-dasharray: 4 3; cursor: default; }
+#mapsvg .rg.d1 path { fill: var(--d1); } #mapsvg .rg.d2 path { fill: var(--d2); } #mapsvg .rg.d3 path { fill: var(--d3); } #mapsvg .rg.d4 path { fill: var(--d4); } #mapsvg .rg.d5 path { fill: var(--d5); }
+#mapsvg .rg.d0 path { fill: url(#ph-d0); }
+#mapsvg .rg.p1 path { fill: var(--p1); } #mapsvg .rg.p2 path { fill: var(--p2); } #mapsvg .rg.p3 path { fill: var(--p3); } #mapsvg .rg.p4 path { fill: url(#ph-p4); }
+#mapsvg .rg.sel path { stroke: var(--accent); stroke-width: 2.6; }
+#mapsvg .mlab { pointer-events: none; fill: var(--fg); paint-order: stroke; stroke: var(--surface); stroke-linejoin: round; font-family: var(--f-ui); }
+#mapsvg .mlab .ab { font-family: var(--f-read); font-weight: 600; }
+#mapsvg .mlab .tv { font-weight: 600; }
+#mapsvg .mlab.bd { fill: var(--muted); }
+.mapgrid-below { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+@media (max-width: 640px) { .mapgrid-below { grid-template-columns: 1fr; } }
 .legend { display: grid; gap: 4px; font-size: 13px; }
 .legend div { display: flex; gap: 8px; align-items: center; }
 .legend i { width: 18px; height: 14px; border: 1px solid var(--line); border-radius: 2px; flex: none; }
@@ -256,5 +274,6 @@ ul.rels b { font-weight: 600; font-size: 13px; }
 <main class="wrap" id="main"></main>
 <div class="pop" id="pop" hidden></div>
 
+<script src="us-states.js" charset="utf-8"></script>
 <script src="book.js" charset="utf-8"></script>
 <script src="engine.js" charset="utf-8"></script>

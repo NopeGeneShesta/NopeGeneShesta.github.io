@@ -21,7 +21,7 @@ PLANNED = [
 shell = open(os.path.join(SRC, BOOKS[0]["shell"]), encoding="utf-8").read()
 css = re.search(r"<style>(.*?)</style>", shell, re.S).group(1)
 body = shell[shell.index("</style>") + len("</style>"):]
-body = re.sub(r'<script src="book.js".*?</script>\s*<script src="engine.js".*?</script>', "", body, flags=re.S).strip()
+body = re.sub(r'(<script src="(us-states|book|engine)\.js"[^>]*></script>\s*)+', "", body, flags=re.S).strip()
 
 EXTRA_CSS = """
 /* Site-only additions */
@@ -63,6 +63,8 @@ def head(title, rel):
 os.makedirs(os.path.join(SITE, "assets"), exist_ok=True)
 open(os.path.join(SITE, "assets", "companion.css"), "w", encoding="utf-8").write(css.strip() + "\n" + EXTRA_CSS)
 shutil.copy(os.path.join(SRC, "engine.js"), os.path.join(SITE, "assets", "engine.js"))
+if os.path.exists(os.path.join(SRC, "us-states.js")):
+    shutil.copy(os.path.join(SRC, "us-states.js"), os.path.join(SITE, "assets", "us-states.js"))
 open(os.path.join(SITE, ".nojekyll"), "w").write("")
 
 # Book pages
@@ -73,7 +75,7 @@ for b in BOOKS:
     page_body = body.replace('<div class="kicker" id="kicker"></div>',
                              '<a class="back" href="../">← Library</a>\n    <div class="kicker" id="kicker"></div>', 1)
     short = b["title"].replace("The ", "", 1)
-    html = head(short + " Companion", "../") + page_body + '\n<script src="book.js"></script>\n<script src="../assets/engine.js"></script>\n</body>\n</html>\n'
+    html = head(short + " Companion", "../") + page_body + '\n<script src="../assets/us-states.js"></script>\n<script src="book.js"></script>\n<script src="../assets/engine.js"></script>\n</body>\n</html>\n'
     open(os.path.join(d, "index.html"), "w", encoding="utf-8").write(html)
     # chapter list from data
     js = open(os.path.join(SRC, b["data"]), encoding="utf-8").read()

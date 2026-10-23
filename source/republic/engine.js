@@ -60,6 +60,7 @@
     store("rc-tab", id);
     renderHints(); syncBar(); hidePop();
     if (id === "timeline") buildTimeline();
+    if (id === "map") layoutMap();
     window.scrollTo(0, 0);
   }
 
@@ -378,32 +379,104 @@
   }
 
   /* ---------- Map ---------- */
-  // Data: map = { title, hint, views: [{label, legend: [[cls, text]]}], grid: [[abbr, col, row]],
-  //   states: { abbr: { name, border?, borderLabel?, v: [[cls, short], ...], info: [lines] } }, borderLegend?, notes[] }
-  var MAPV = { view: 0, sel: null };
+  // Data: map = { title, unit?, hint?, view?: "x y w h" (draws real state shapes from window.US_STATES),
+  //   views: [{label, legend: [[cls, text]]}], grid: [[abbr, col, row]] (tile fallback),
+  //   states: { abbr: { name, ids?: [shape ids], labelAt?: [x, y], border?, borderLabel?, v: [[cls, short], ...], info: [lines] } },
+  //   borderLegend?, notes[] }
+  var MAPV = { view: 0, sel: null, svg: false, laid: false };
+  function stateIds(abbr, st) { return st.ids || [abbr.toLowerCase()]; }
   function renderMap() {
     var s = $("sec-map"); if (!s) return;
-    var M = C.map; MAPV = { view: 0, sel: null };
-    var cols = 1 + Math.max.apply(null, M.grid.map(function (g) { return g[1]; }));
-    s.innerHTML = '<div class="card"><div class="chead"><span class="role">' + esc(M.title) + '</span></div><div class="btns" id="mapViews">' +
-      M.views.map(function (v, i) { return '<button class="btn" data-v="' + i + '">' + esc(v.label) + ' <span class="k">' + (i + 1) + "</span></button>"; }).join("") + "</div>" +
-      '<div class="panels mapgrid"><div class="tilemap" id="tiles" style="grid-template-columns:repeat(' + cols + ',minmax(0,1fr));max-width:' + Math.min(620, cols * 104) + 'px"></div><div style="display:grid;gap:10px;align-content:start"><div class="legend" id="mapLegend"></div><div class="pnl prop" id="mapInfo"></div></div></div>' +
-      '<ul class="plain read lk muted">' + (M.notes || []).map(function (n) { return "<li>" + esc(n) + "</li>"; }).join("") + "</ul></div>";
+    var M = C.map; MAPV = { view: 0, sel: null, svg: !!(M.view && window.US_STATES), laid: false };
+    var head = '<div class="card"><div class="chead"><span class="role">' + esc(M.title) + '</span></div><div class="btns" id="mapViews">' +
+      M.views.map(function (v, i) { return '<button class="btn" data-v="' + i + '">' + esc(v.label) + ' <span class="k">' + (i + 1) + "</span></button>"; }).join("") + "</div>";
+    var side = '<div class="legend" id="mapLegend"></div><div class="pnl prop" id="mapInfo"></div>';
+    var notes = '<ul class="plain read lk muted">' + (M.notes || []).map(function (n) { return "<li>" + esc(n) + "</li>"; }).join("") + "</ul>";
+    if (MAPV.svg) {
+      s.innerHTML = head + '<div class="mapsvg-wrap"><svg id="mapsvg" viewBox="' + esc(M.view) + '" role="img" aria-label="' + esc(M.title) + '"></svg></div>' +
+        '<div class="panels mapgrid-below">' + side + "</div>" + notes + '<p class="muted small">State outlines: ' + esc(window.US_STATES.source) + ".</p></div>";
+      buildMapSvg();
+    } else {
+      var cols = 1 + Math.max.apply(null, M.grid.map(function (g) { return g[1]; }));
+      s.innerHTML = head + '<div class="panels mapgrid"><div class="tilemap" id="tiles" style="grid-template-columns:repeat(' + cols + ',minmax(0,1fr));max-width:' + Math.min(620, cols * 104) + 'px"></div><div style="display:grid;gap:10px;align-content:start">' + side + "</div></div>" + notes + "</div>";
+    }
     Array.prototype.forEach.call(s.querySelectorAll("#mapViews .btn"), function (b) { b.addEventListener("click", function () { setMapView(+b.dataset.v); }); });
     setMapView(0);
   }
+  function svgEl(tag, attrs) { var el = document.createElementNS(NS, tag); for (var k in attrs) el.setAttribute(k, attrs[k]); return el; }
+  function buildMapSvg() {
+    var M = C.map, U = window.US_STATES, svg = $("mapsvg"), owner = {};
+    Object.keys(M.states).forEach(function (a) { stateIds(a, M.states[a]).forEach(function (id) { owner[id] = a; }); });
+    var defs = svgEl("defs", {});
+    defs.innerHTML =
+      '<pattern id="ph-d0" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" style="fill:var(--surface)"/><rect width="4" height="8" style="fill:var(--orig-bg)"/></pattern>' +
+      '<pattern id="ph-p4" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" style="fill:var(--p2)"/><rect width="4" height="8" style="fill:var(--p3)"/></pattern>';
+    svg.appendChild(defs);
+    var ctx = svgEl("g", { "class": "ctx" }), rgs = svgEl("g", {}), lbl = svgEl("g", { "class": "lbls" });
+    svg.appendChild(ctx); svg.appendChild(rgs); svg.appendChild(lbl);
+    var groups = {};
+    Object.keys(U.paths).forEach(function (id) {
+      var a = owner[id];
+      if (!a) { if (id !== "ak") ctx.appendChild(svgEl("path", { d: U.paths[id], "class": "ctxp" })); return; }
+      if (!groups[a]) {
+        var st = M.states[a];
+        var g = svgEl("g", { "class": "rg" + (st.border ? " bd" : ""), "data-st": a, "aria-label": st.name });
+        if (!st.border) { g.setAttribute("tabindex", "0"); g.setAttribute("role", "button"); }
+        groups[a] = g; rgs.appendChild(g);
+        g.addEventListener("click", function () { if (!st.border) { MAPV.sel = a; setMapView(MAPV.view); } });
+        g.addEventListener("keydown", function (e) { if ((e.key === "Enter" || e.key === " ") && !st.border) { e.preventDefault(); MAPV.sel = a; setMapView(MAPV.view); } });
+      }
+      groups[a].appendChild(svgEl("path", { d: U.paths[id] }));
+    });
+    Object.keys(groups).forEach(function (a) {
+      var t = svgEl("text", { "class": "mlab", "data-st": a, "text-anchor": "middle" });
+      t.appendChild(svgEl("tspan", { "class": "ab", x: 0, dy: 0 })); t.lastChild.textContent = a;
+      t.appendChild(svgEl("tspan", { "class": "tv", x: 0 }));
+      lbl.appendChild(t);
+    });
+    MAPV.groups = groups;
+  }
+  function layoutMap() {
+    if (!MAPV.svg || current !== "map") return;
+    var svg = $("mapsvg"); if (!svg || !svg.clientWidth) return;
+    var vb = C.map.view.split(/\s+/).map(Number), r = svg.getBoundingClientRect();
+    var k = 1 / Math.min(r.width / vb[2], r.height / vb[3]);
+    svg.style.setProperty("--k", k);
+    Array.prototype.forEach.call(svg.querySelectorAll(".mlab"), function (t) {
+      var a = t.dataset.st, st = C.map.states[a], x, y;
+      if (st.labelAt) { x = st.labelAt[0]; y = st.labelAt[1]; }
+      else { var b = MAPV.groups[a].getBBox(); x = b.x + b.width / 2; y = b.y + b.height / 2; }
+      t.setAttribute("transform", "translate(" + x + "," + y + ")");
+      t.firstChild.setAttribute("font-size", 13.5 * k); t.firstChild.setAttribute("dy", 0);
+      t.lastChild.setAttribute("font-size", 11 * k); t.lastChild.setAttribute("dy", 13 * k);
+      t.style.strokeWidth = 3 * k;
+    });
+    MAPV.laid = true;
+  }
+  window.addEventListener("resize", function () { if (current === "map") layoutMap(); });
   function setMapView(v) {
     var M = C.map; if (!M || v < 0 || v >= M.views.length) return;
     MAPV.view = v;
     Array.prototype.forEach.call(document.querySelectorAll("#mapViews .btn"), function (b) { b.setAttribute("aria-pressed", +b.dataset.v === v ? "true" : "false"); });
-    $("tiles").innerHTML = M.grid.map(function (g) {
-      var st = M.states[g[0]], cls = "tile", val;
-      if (st.border) { cls += " border"; val = st.borderLabel || ""; }
-      else { var p = (st.v || [])[v] || ["", ""]; if (p[0]) cls += " " + p[0]; val = p[1]; }
-      if (MAPV.sel === g[0]) cls += " sel";
-      return '<button class="' + cls + '" data-st="' + g[0] + '" style="grid-column:' + (g[1] + 1) + ";grid-row:" + (g[2] + 1) + '" aria-label="' + esc(st.name) + '"' + (st.border ? " disabled" : "") + '><span class="ab">' + g[0] + '</span><span class="tv">' + esc(val) + "</span></button>";
-    }).join("");
-    Array.prototype.forEach.call(document.querySelectorAll("#tiles .tile"), function (t) { t.addEventListener("click", function () { MAPV.sel = t.dataset.st; setMapView(MAPV.view); }); });
+    function val(a) { var st = M.states[a]; if (st.border) return ["", st.borderLabel || ""]; return (st.v || [])[v] || ["", ""]; }
+    if (MAPV.svg) {
+      Object.keys(MAPV.groups).forEach(function (a) {
+        var g = MAPV.groups[a], st = M.states[a], p = val(a);
+        g.setAttribute("class", "rg" + (st.border ? " bd" : "") + (p[0] ? " " + p[0] : "") + (MAPV.sel === a ? " sel" : ""));
+        if (MAPV.sel === a) g.parentNode.appendChild(g);
+        var t = $("mapsvg").querySelector('.mlab[data-st="' + a + '"]');
+        if (t) { t.lastChild.textContent = p[1]; t.setAttribute("class", "mlab" + (st.border ? " bd" : "")); }
+      });
+      layoutMap();
+    } else {
+      $("tiles").innerHTML = M.grid.map(function (g) {
+        var st = M.states[g[0]], cls = "tile", p = val(g[0]);
+        if (st.border) cls += " border"; else if (p[0]) cls += " " + p[0];
+        if (MAPV.sel === g[0]) cls += " sel";
+        return '<button class="' + cls + '" data-st="' + g[0] + '" style="grid-column:' + (g[1] + 1) + ";grid-row:" + (g[2] + 1) + '" aria-label="' + esc(st.name) + '"' + (st.border ? " disabled" : "") + '><span class="ab">' + g[0] + '</span><span class="tv">' + esc(p[1]) + "</span></button>";
+      }).join("");
+      Array.prototype.forEach.call(document.querySelectorAll("#tiles .tile"), function (t) { t.addEventListener("click", function () { MAPV.sel = t.dataset.st; setMapView(MAPV.view); }); });
+    }
     var leg = M.views[v].legend.map(function (l) { return '<div><i class="tile ' + l[0] + '" style="aspect-ratio:auto;padding:0"></i><span>' + esc(l[1]) + "</span></div>"; }).join("");
     if (M.borderLegend) leg += '<div><i class="tile border" style="aspect-ratio:auto;padding:0"></i><span>' + esc(M.borderLegend) + "</span></div>";
     $("mapLegend").innerHTML = leg;
