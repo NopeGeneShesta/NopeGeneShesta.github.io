@@ -56,7 +56,7 @@
       if (on && focus) t.focus();
     });
     tabsOn.forEach(function (t) { var s = $("sec-" + t.id); if (s) s.hidden = t.id !== id; });
-    document.body.classList.toggle("wide", id === "factions");
+    document.body.classList.toggle("wide", id === "factions" || (id === "map" && !!(C.map && C.map.view && window.US_STATES)));
     store("rc-tab", id);
     renderHints(); syncBar(); hidePop();
     if (id === "timeline") buildTimeline();
@@ -393,8 +393,9 @@
     var side = '<div class="legend" id="mapLegend"></div><div class="pnl prop" id="mapInfo"></div>';
     var notes = '<ul class="plain read lk muted">' + (M.notes || []).map(function (n) { return "<li>" + esc(n) + "</li>"; }).join("") + "</ul>";
     if (MAPV.svg) {
-      s.innerHTML = head + '<div class="mapsvg-wrap"><svg id="mapsvg" viewBox="' + esc(M.view) + '" role="img" aria-label="' + esc(M.title) + '"></svg></div>' +
-        '<div class="panels mapgrid-below">' + side + "</div>" + notes + '<p class="muted small">State outlines: ' + esc(window.US_STATES.source) + ".</p></div>";
+      s.innerHTML = '<div class="fx-grid">' + head + '<div class="mapsvg-wrap"><svg id="mapsvg" viewBox="' + esc(M.view) + '" role="img" aria-label="' + esc(M.title) + '"></svg></div>' +
+        notes + '<p class="muted small">State outlines: ' + esc(window.US_STATES.source) + ".</p></div>" +
+        '<div class="fx-side"><div class="card"><div class="pnl prop" id="mapInfo"></div></div><div class="card"><div class="legend" id="mapLegend"></div></div></div></div>';
       buildMapSvg();
     } else {
       var cols = 1 + Math.max.apply(null, M.grid.map(function (g) { return g[1]; }));

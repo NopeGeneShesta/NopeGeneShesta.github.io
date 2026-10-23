@@ -220,7 +220,7 @@ ul.rels b { font-weight: 600; font-size: 13px; }
 @media (max-width: 640px) { .mapgrid { grid-template-columns: 1fr; } }
 /* Map: real state shapes */
 .mapsvg-wrap { width: 100%; }
-#mapsvg { display: block; width: 100%; height: auto; max-height: 72vh; }
+#mapsvg { display: block; width: 100%; height: auto; max-height: calc(100vh - var(--tbh, 140px) - 120px); min-height: 280px; }
 #mapsvg .ctxp { fill: var(--orig-bg); stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; }
 #mapsvg .rg path { fill: var(--surface); stroke: var(--rule); stroke-width: 1.2; vector-effect: non-scaling-stroke; stroke-linejoin: round; cursor: pointer; }
 #mapsvg .rg:hover path, #mapsvg .rg:focus-visible path { stroke: var(--fg); stroke-width: 1.8; }
