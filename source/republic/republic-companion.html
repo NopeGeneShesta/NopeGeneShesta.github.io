@@ -234,6 +234,23 @@ ul.rels b { font-weight: 600; font-size: 13px; }
 #mapsvg .mlab .ab { font-family: var(--f-read); font-weight: 600; }
 #mapsvg .mlab .tv { font-weight: 600; }
 #mapsvg .mlab.bd { fill: var(--muted); }
+#mapsvg .rg.cx path { fill: var(--orig-bg); stroke: var(--line); stroke-width: 1; cursor: default; }
+#mapsvg .mlab.hide { display: none; }
+#mapsvg .marea { fill: var(--muted); font-family: var(--f-ui); font-weight: 600; letter-spacing: .12em; paint-order: stroke; stroke: var(--surface); stroke-linejoin: round; pointer-events: none; }
+#mapsvg .route { cursor: pointer; }
+#mapsvg .route:focus { outline: none; }
+#mapsvg .route .halo { fill: none; stroke: var(--surface); stroke-linecap: round; stroke-linejoin: round; }
+#mapsvg .route .line { fill: none; stroke: var(--fg); stroke-linecap: round; stroke-linejoin: round; }
+#mapsvg .route .hit { fill: none; stroke: transparent; }
+#mapsvg .route .head { fill: var(--fg); }
+#mapsvg .route:hover .line, #mapsvg .route:focus-visible .line { stroke: var(--accent); }
+#mapsvg .route.sel .line { stroke: var(--accent); }
+#mapsvg .route.sel .head, #mapsvg .route:hover .head { fill: var(--accent); }
+#mapsvg .rlab { fill: var(--fg); font-family: var(--f-ui); font-style: italic; font-weight: 500; paint-order: stroke; stroke: var(--surface); stroke-linejoin: round; }
+#mapsvg .route.sel .rlab { fill: var(--accent); font-weight: 600; }
+#mapsvg .city { fill: var(--fg); stroke: var(--surface); pointer-events: none; }
+#mapsvg .clab { fill: var(--fg); font-family: var(--f-ui); font-weight: 600; paint-order: stroke; stroke: var(--surface); stroke-linejoin: round; pointer-events: none; }
+.lsw { width: 18px; height: 14px; flex: none; }
 .mapgrid-below { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
 @media (max-width: 640px) { .mapgrid-below { grid-template-columns: 1fr; } }
 .legend { display: grid; gap: 4px; font-size: 13px; }

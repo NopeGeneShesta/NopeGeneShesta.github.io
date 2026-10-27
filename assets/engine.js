@@ -413,8 +413,8 @@
       '<pattern id="ph-d0" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" style="fill:var(--surface)"/><rect width="4" height="8" style="fill:var(--orig-bg)"/></pattern>' +
       '<pattern id="ph-p4" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" style="fill:var(--p2)"/><rect width="4" height="8" style="fill:var(--p3)"/></pattern>';
     svg.appendChild(defs);
-    var ctx = svgEl("g", { "class": "ctx" }), rgs = svgEl("g", {}), lbl = svgEl("g", { "class": "lbls" });
-    svg.appendChild(ctx); svg.appendChild(rgs); svg.appendChild(lbl);
+    var ctx = svgEl("g", { "class": "ctx" }), rgs = svgEl("g", {}), lbl = svgEl("g", { "class": "lbls" }), ovl = svgEl("g", { "class": "ovl", id: "mapovl" });
+    svg.appendChild(ctx); svg.appendChild(rgs); svg.appendChild(lbl); svg.appendChild(ovl);
     var groups = {};
     Object.keys(U.paths).forEach(function (id) {
       var a = owner[id];
@@ -424,8 +424,8 @@
         var g = svgEl("g", { "class": "rg" + (st.border ? " bd" : ""), "data-st": a, "aria-label": st.name });
         if (!st.border) { g.setAttribute("tabindex", "0"); g.setAttribute("role", "button"); }
         groups[a] = g; rgs.appendChild(g);
-        g.addEventListener("click", function () { if (!st.border) { MAPV.sel = a; setMapView(MAPV.view); } });
-        g.addEventListener("keydown", function (e) { if ((e.key === "Enter" || e.key === " ") && !st.border) { e.preventDefault(); MAPV.sel = a; setMapView(MAPV.view); } });
+        g.addEventListener("click", function () { if (!st.border && !g.classList.contains("cx")) { MAPV.sel = a; setMapView(MAPV.view); } });
+        g.addEventListener("keydown", function (e) { if ((e.key === "Enter" || e.key === " ") && !st.border && !g.classList.contains("cx")) { e.preventDefault(); MAPV.sel = a; setMapView(MAPV.view); } });
       }
       groups[a].appendChild(svgEl("path", { d: U.paths[id] }));
     });
@@ -440,7 +440,8 @@
   function layoutMap() {
     if (!MAPV.svg || current !== "map") return;
     var svg = $("mapsvg"); if (!svg || !svg.clientWidth) return;
-    var vb = C.map.view.split(/\s+/).map(Number), r = svg.getBoundingClientRect();
+    var vbs = (C.map.views[MAPV.view].view || C.map.view); svg.setAttribute("viewBox", vbs);
+    var vb = vbs.split(/\s+/).map(Number), r = svg.getBoundingClientRect();
     var k = 1 / Math.min(r.width / vb[2], r.height / vb[3]);
     svg.style.setProperty("--k", k);
     Array.prototype.forEach.call(svg.querySelectorAll(".mlab"), function (t) {
@@ -452,21 +453,64 @@
       t.lastChild.setAttribute("font-size", 11 * k); t.lastChild.setAttribute("dy", 13 * k);
       t.style.strokeWidth = 3 * k;
     });
+    drawOverlay(k);
     MAPV.laid = true;
+  }
+  function drawOverlay(k) {
+    var M = C.map, V = M.views[MAPV.view], ovl = $("mapovl"); if (!ovl) return;
+    ovl.innerHTML = "";
+    var P = M.points || {};
+    (V.areas || []).forEach(function (a) {
+      var t = svgEl("text", { "class": "marea", x: a[1], y: a[2], "text-anchor": "middle", "font-size": 13 * k });
+      t.style.strokeWidth = 4 * k; t.textContent = a[0]; ovl.appendChild(t);
+    });
+    (V.routes || []).forEach(function (rt) {
+      var d = rt.pts.map(function (n, i) { var p = Array.isArray(n) ? n : P[n]; return (i ? "L" : "M") + p[0] + "," + p[1]; }).join(" ");
+      var g = svgEl("g", { "class": "route" + (rt.dash ? " dash" : "") + (MAPV.sel === "r:" + rt.id ? " sel" : ""), tabindex: "0", role: "button", "aria-label": rt.name });
+      g.appendChild(svgEl("path", { d: d, "class": "halo", "stroke-width": 6 * k }));
+      g.appendChild(svgEl("path", { d: d, "class": "line", "stroke-width": 2.4 * k, "stroke-dasharray": rt.dash ? (7 * k) + " " + (5 * k) : "none" }));
+      g.appendChild(svgEl("path", { d: d, "class": "hit", "stroke-width": 14 * k }));
+      if (rt.arrow) {
+        var a = rt.pts.map(function (n) { return Array.isArray(n) ? n : P[n]; }), p1 = a[a.length - 2], p2 = a[a.length - 1];
+        var ang = Math.atan2(p2[1] - p1[1], p2[0] - p1[0]), s = 8 * k;
+        g.appendChild(svgEl("path", { "class": "head", d: "M" + p2[0] + "," + p2[1] + " L" + (p2[0] - s * Math.cos(ang - 0.45)) + "," + (p2[1] - s * Math.sin(ang - 0.45)) + " L" + (p2[0] - s * Math.cos(ang + 0.45)) + "," + (p2[1] - s * Math.sin(ang + 0.45)) + " Z" }));
+      }
+      if (rt.label) {
+        var t = svgEl("text", { "class": "rlab", x: rt.label[0], y: rt.label[1], "text-anchor": rt.label[2] || "middle", "font-size": 11 * k });
+        t.style.strokeWidth = 3 * k; t.textContent = rt.short || rt.name; g.appendChild(t);
+      }
+      function pick() { MAPV.sel = "r:" + rt.id; setMapView(MAPV.view); }
+      g.addEventListener("click", pick);
+      g.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
+      ovl.appendChild(g);
+    });
+    (V.cities || []).forEach(function (c) {
+      var p = P[c[0]], dx = (c[1] || 6) * k, dy = (c[2] || 4) * k;
+      ovl.appendChild(svgEl("circle", { "class": "city", cx: p[0], cy: p[1], r: 3.4 * k, "stroke-width": 1.6 * k }));
+      var t = svgEl("text", { "class": "clab", x: p[0] + dx, y: p[1] + dy, "text-anchor": c[3] || "start", "font-size": 11.5 * k });
+      t.style.strokeWidth = 3 * k; t.textContent = c[0]; ovl.appendChild(t);
+    });
+  }
+  function legendSwatch(cls) {
+    if (cls === "ln" || cls === "ln-dash") return '<svg class="lsw" viewBox="0 0 22 10"><line x1="1" y1="5" x2="21" y2="5" style="stroke:var(--fg);stroke-width:2.4' + (cls === "ln-dash" ? ';stroke-dasharray:5 3' : "") + '"/></svg>';
+    if (cls === "city") return '<svg class="lsw" viewBox="0 0 22 10"><circle cx="11" cy="5" r="3.4" style="fill:var(--fg);stroke:var(--surface);stroke-width:1.4"/></svg>';
+    return '<i class="tile ' + cls + '" style="aspect-ratio:auto;padding:0"></i>';
   }
   window.addEventListener("resize", function () { if (current === "map") layoutMap(); });
   function setMapView(v) {
     var M = C.map; if (!M || v < 0 || v >= M.views.length) return;
     MAPV.view = v;
     Array.prototype.forEach.call(document.querySelectorAll("#mapViews .btn"), function (b) { b.setAttribute("aria-pressed", +b.dataset.v === v ? "true" : "false"); });
-    function val(a) { var st = M.states[a]; if (st.border) return ["", st.borderLabel || ""]; return (st.v || [])[v] || ["", ""]; }
+    function val(a) { var st = M.states[a]; if (st.border) return ["", st.borderLabel || ""]; var x = (st.v || [])[v]; return x === null ? null : (x || ["", ""]); }
+    var hideLabels = M.views[v].stateLabels === false;
     if (MAPV.svg) {
       Object.keys(MAPV.groups).forEach(function (a) {
         var g = MAPV.groups[a], st = M.states[a], p = val(a);
-        g.setAttribute("class", "rg" + (st.border ? " bd" : "") + (p[0] ? " " + p[0] : "") + (MAPV.sel === a ? " sel" : ""));
+        if (p === null) { g.setAttribute("class", "rg cx"); if (MAPV.sel === a) MAPV.sel = null; }
+        else g.setAttribute("class", "rg" + (st.border ? " bd" : "") + (p[0] ? " " + p[0] : "") + (MAPV.sel === a ? " sel" : ""));
         if (MAPV.sel === a) g.parentNode.appendChild(g);
         var t = $("mapsvg").querySelector('.mlab[data-st="' + a + '"]');
-        if (t) { t.lastChild.textContent = p[1]; t.setAttribute("class", "mlab" + (st.border ? " bd" : "")); }
+        if (t) { t.lastChild.textContent = p ? p[1] : ""; t.setAttribute("class", "mlab" + (st.border ? " bd" : "") + (p === null || hideLabels ? " hide" : "")); }
       });
       layoutMap();
     } else {
@@ -478,11 +522,16 @@
       }).join("");
       Array.prototype.forEach.call(document.querySelectorAll("#tiles .tile"), function (t) { t.addEventListener("click", function () { MAPV.sel = t.dataset.st; setMapView(MAPV.view); }); });
     }
-    var leg = M.views[v].legend.map(function (l) { return '<div><i class="tile ' + l[0] + '" style="aspect-ratio:auto;padding:0"></i><span>' + esc(l[1]) + "</span></div>"; }).join("");
+    var leg = M.views[v].legend.map(function (l) { return "<div>" + legendSwatch(l[0]) + "<span>" + esc(l[1]) + "</span></div>"; }).join("");
     if (M.borderLegend) leg += '<div><i class="tile border" style="aspect-ratio:auto;padding:0"></i><span>' + esc(M.borderLegend) + "</span></div>";
     $("mapLegend").innerHTML = leg;
     var info = $("mapInfo");
-    if (MAPV.sel && M.states[MAPV.sel]) {
+    var rsel = MAPV.sel && MAPV.sel.indexOf("r:") === 0 ? (M.views[v].routes || []).filter(function (r) { return "r:" + r.id === MAPV.sel; })[0] : null;
+    if (MAPV.sel && MAPV.sel.indexOf("r:") === 0 && !rsel) MAPV.sel = null;
+    if (rsel) {
+      info.innerHTML = '<div class="plabel">' + esc(rsel.name) + "</div>" + (rsel.info || []).map(function (l) { return '<p class="read lk">' + esc(l) + "</p>"; }).join("");
+      linkAll(info.parentNode);
+    } else if (MAPV.sel && M.states[MAPV.sel]) {
       var st = M.states[MAPV.sel];
       info.innerHTML = '<div class="plabel">' + esc(st.name) + "</div>" + (st.info || []).map(function (l) { return '<p class="read">' + esc(l) + "</p>"; }).join("");
     } else info.innerHTML = '<div class="plabel">Tap a ' + esc(M.unit || "state") + '</div><p class="read">' + esc(M.hint || "See the details for each one.") + "</p>";
